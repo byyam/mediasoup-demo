@@ -12,6 +12,7 @@ console.log('config.js:\n%s', JSON.stringify(config, null, '  '));
 
 const fs = require('fs');
 const https = require('https');
+const http = require('http');
 const url = require('url');
 const protoo = require('protoo-server');
 const mediasoup = require('mediasoup');
@@ -22,6 +23,7 @@ const Logger = require('./lib/Logger');
 const Room = require('./lib/Room');
 const interactiveServer = require('./lib/interactiveServer');
 const interactiveClient = require('./lib/interactiveClient');
+const Stats = require('./lib/Stats')
 
 const logger = new Logger();
 
@@ -36,6 +38,7 @@ const rooms = new Map();
 // HTTPS server.
 // @type {https.Server}
 let httpsServer;
+let httpServer;
 
 // Express application.
 // @type {Function}
@@ -71,7 +74,8 @@ async function run()
 	await createExpressApp();
 
 	// Run HTTPS server.
-	await runHttpsServer();
+	//await runHttpsServer();
+	await runHttpServer();
 
 	// Run a protoo WebSocketServer.
 	await runProtooWebSocketServer();
@@ -84,6 +88,8 @@ async function run()
 			room.logStatus();
 		}
 	}, 120000);
+
+	Stats.intervalStats(rooms);
 }
 
 /**
@@ -121,7 +127,7 @@ async function runMediasoupWorkers()
 			const usage = await worker.getResourceUsage();
 
 			logger.info('mediasoup Worker resource usage [pid:%d]: %o', worker.pid, usage);
-		}, 120000);
+		}, 1200000);
 	}
 }
 
@@ -441,6 +447,23 @@ async function runHttpsServer()
 	});
 }
 
+async function runHttpServer() {
+	logger.info('running an HTTP server...');
+  
+	const requestListener = function (req, res) {
+	  res.writeHead(200);
+	  res.end("My first server!");
+	};
+  
+	httpServer = http.createServer(requestListener);
+  
+	await new Promise((resolve) => {
+	  httpServer.listen(
+		Number(config.https.listenPort), config.https.listenIp, resolve);
+	});
+}
+ 
+
 /**
  * Create a protoo WebSocketServer to allow WebSocket connections from browsers.
  */
@@ -449,7 +472,7 @@ async function runProtooWebSocketServer()
 	logger.info('running protoo WebSocketServer...');
 
 	// Create the protoo WebSocket server.
-	protooWebSocketServer = new protoo.WebSocketServer(httpsServer,
+	protooWebSocketServer = new protoo.WebSocketServer(httpServer,
 		{
 			maxReceivedFrameSize     : 960000, // 960 KBytes.
 			maxReceivedMessageSize   : 960000,
