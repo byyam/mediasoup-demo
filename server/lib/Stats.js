@@ -23,7 +23,7 @@ function intervalStats(rooms)
 				resultList.forEach(items=>{
 				   console.log(items) 
 				   items.forEach(item=>{
-					   logger.info('bitrate:%d', item.bitrate);
+					   logger.info('producer bitrate:%d', item.bitrate);
 				   })
 				})
 			}).catch(error =>{
@@ -36,8 +36,11 @@ function intervalStats(rooms)
 				consumerPromiseList.push(consumer.getStats());
 			}
 			Promise.all(consumerPromiseList).then(resultList=>{
-				resultList.forEach(item=>{
-				   console.log(item) 
+				resultList.forEach(items=>{
+				   console.log(items) 
+				   items.forEach(item=>{
+					   logger.info('consumer bitrate:%d', item.bitrate);
+				   })
 				})
 			}).catch(error =>{
 				   logger.error(JSON.stringify(error.stack))
